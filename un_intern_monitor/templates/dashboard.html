@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UN Internship Monitor</title>
+    {% if static_mode %}
+      <link rel="stylesheet" href="dashboard.css">
+    {% else %}
+      <link rel="stylesheet" href="{{ url_for('static', path='/dashboard.css') }}">
+    {% endif %}
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Portfolio Project</p>
+        <h1>UN Internship Monitor</h1>
+        <p class="subtitle">Multi-source internship tracking across UN Careers, UNHCR, UNDP, UNIDO, WFP, and UNICEF.</p>
+      </div>
+      <div class="meta">
+        <span>Last updated</span>
+        <strong>{{ last_updated }}</strong>
+      </div>
+    </header>
+
+    <main>
+      <section class="stats" aria-label="Summary">
+        <div class="stat">
+          <span>Total jobs</span>
+          <strong>{{ stats.total }}</strong>
+        </div>
+        <div class="stat">
+          <span>Active</span>
+          <strong>{{ stats.active }}</strong>
+        </div>
+        <div class="stat">
+          <span>Posted today</span>
+          <strong>{{ stats.today_posted }}</strong>
+        </div>
+        <div class="stat urgent">
+          <span>Deadline tomorrow</span>
+          <strong>{{ stats.deadline_tomorrow }}</strong>
+        </div>
+        <div class="stat">
+          <span>Sources</span>
+          <strong>{{ stats.sources }}</strong>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Filters">
+        <form method="get" action="/">
+          <label>
+            Search
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="Title, location, department, Job ID">
+          </label>
+          <label>
+            Source
+            <select name="source">
+              <option value="all" {% if filters.source == "all" %}selected{% endif %}>All sources</option>
+              {% for item in sources %}
+                <option value="{{ item }}" {% if filters.source == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            View
+            <select name="status">
+              <option value="active" {% if filters.status == "active" %}selected{% endif %}>Active jobs</option>
+              <option value="today" {% if filters.status == "today" %}selected{% endif %}>Posted today</option>
+              <option value="deadline" {% if filters.status == "deadline" %}selected{% endif %}>Deadline tomorrow</option>
+              <option value="all" {% if filters.status == "all" %}selected{% endif %}>All jobs</option>
+            </select>
+          </label>
+          <button type="submit" {% if static_mode %}disabled title="Use the live app for interactive filters"{% endif %}>Apply</button>
+        </form>
+      </section>
+
+      <section class="jobs" aria-label="Jobs">
+        <div class="section-head">
+          <div>
+            <h2>Openings</h2>
+            <p>{{ jobs|length }} results shown. Today is {{ today }}; tomorrow is {{ tomorrow }}.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Source</th>
+                <th>Location</th>
+                <th>Posted</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in jobs %}
+                <tr>
+                  <td>
+                    <strong>{{ job.title }}</strong>
+                    <span>{{ job.department }}</span>
+                    <small>{{ job.job_opening_id }}</small>
+                  </td>
+                  <td>{{ job.source }}</td>
+                  <td>{{ job.location or "Unknown" }}</td>
+                  <td>{{ job.posted_date }}</td>
+                  <td>{{ job.deadline_date }}</td>
+                  <td>
+                    <span class="pill {{ job.urgency }}">
+                      {% if job.days_left is none %}
+                        No date
+                      {% elif job.days_left < 0 %}
+                        Closed
+                      {% elif job.days_left == 0 %}
+                        Today
+                      {% elif job.days_left == 1 %}
+                        Tomorrow
+                      {% else %}
+                        {{ job.days_left }} days
+                      {% endif %}
+                    </span>
+                  </td>
+                  <td><a class="apply" href="{{ job.apply_url }}" target="_blank" rel="noreferrer">Apply</a></td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="7" class="empty">No jobs match these filters.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

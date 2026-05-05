@@ -1,0 +1,61 @@
+# UN 实习岗位监控工具
+
+第一阶段功能：
+
+- 每天抓取 UN Careers 上 Category 为 Internship 的岗位，默认使用 `jobopening` 页面里 `jc:["INT"]` 的筛选链接。
+- 保存岗位标题、Job Opening ID、部门、地点、发布日期、截止日期和申请链接到 SQLite。
+- 识别本次抓取中新出现的岗位，以及明天截止的岗位。
+- 通过微信推送摘要。当前支持 ServerChan 和企业微信机器人。
+
+## 安装
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m playwright install chromium
+Copy-Item .env.example .env
+```
+
+编辑 `.env`：
+
+```dotenv
+PUSH_CHANNEL=serverchan
+SERVERCHAN_SENDKEY=你的ServerChanSendKey
+```
+
+如果使用企业微信机器人：
+
+```dotenv
+PUSH_CHANNEL=wecom
+WECOM_WEBHOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...
+```
+
+## 运行
+
+```powershell
+python -m un_intern_monitor.main --no-push
+```
+
+确认摘要正常后：
+
+```powershell
+python -m un_intern_monitor.main
+```
+
+## Windows 每日定时任务
+
+用管理员 PowerShell 执行，下面示例每天 09:00 运行：
+
+```powershell
+$project = "D:\儿童医保\Pythonproject"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$project\scripts\run_monitor.ps1`""
+$trigger = New-ScheduledTaskTrigger -Daily -At 09:00
+Register-ScheduledTask -TaskName "UNInternshipMonitor" -Action $action -Trigger $trigger -Description "Daily UN Careers internship monitor"
+```
+
+## 第二阶段小程序预留
+
+岗位数据保存在 `data/un_internships.sqlite` 的 `jobs` 表。字段已经覆盖小程序列表、关键词筛选和订阅提醒的基本需求：`title`、`job_opening_id`、`department`、`location`、`posted_date`、`deadline_date`、`apply_url`、`first_seen_at`、`last_seen_at`。
+
+后续可以新增一个轻量 API 服务，让微信小程序读取这个 SQLite 或迁移到 MySQL/PostgreSQL。
