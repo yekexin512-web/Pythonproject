@@ -36,6 +36,7 @@ def push_message(
             timeout=30,
         )
         response.raise_for_status()
+        _raise_for_api_error(response, "ServerChan")
         return
     if channel == "wecom":
         if not wecom_webhook_url:
@@ -46,8 +47,20 @@ def push_message(
             timeout=30,
         )
         response.raise_for_status()
+        _raise_for_api_error(response, "WeCom")
         return
     raise ValueError(f"不支持的 PUSH_CHANNEL: {channel}")
+
+
+def _raise_for_api_error(response: requests.Response, provider: str) -> None:
+    try:
+        payload = response.json()
+    except ValueError:
+        return
+
+    for key in ("code", "errno", "errcode", "error_code"):
+        if key in payload and payload[key] not in (0, "0", None):
+            raise RuntimeError(f"{provider} 推送失败: {payload}")
 
 
 def _format_jobs(jobs: list[Job]) -> list[str]:
